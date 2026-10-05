@@ -1,0 +1,99 @@
+{
+  "grid": [
+    { "id": "p1", "xs": 4, "class": "main", "table": "devhard" },
+    { "id": "p2", "xs": 4, "class": "main", "table": "devhard" },
+    { "id": "p4", "xs": 4, "class": "main", "table": "devhard", "hide": "data.p3.syschan" },
+    { "id": "p3", "xs": 12, "class": "main", "table": "devhard", "hide": "data.p3.syschan" },
+    { "id": "p9", "xs": 6, "class": "main", "table": "onechannelrtTable" },
+    { "id": "ptest", "xs": 6, "class": "main", "table": "devhard", "hide": "!data.p4.w" }
+  ],
+  "spacing": 4,
+
+  "p1": [
+    { "prop": "title", "title": "Name", "type": "input" },
+    { "prop": "devpropname", "title": "Свойство для привязки", "type": "input" }
+  ],
+  "p2": [
+    { "prop": "r", "title": "$Read", "type": "cb" },
+    { "prop": "calc", "title": "$Devhard_Calc", "type": "input", "hide": "!data.p2.r" }
+  ],
+  "p4": [
+    { "prop": "w", "title": "$Write", "type": "cb" },
+    { "prop": "calc_out", "title": "$Devhard_Calc_Out", "type": "input", "hide": "!data.p4.w" }
+  ],
+  "p3": [
+    { "prop": "objAdr", "title": "$objAdr", "type": "number", "hide": "!data.p2.r || data.p3.syschan" },
+
+    { "prop": "syschan", "title": "Системный индикатор", "type": "cb", "hide": "1==1" },
+
+    {
+      "prop": "ioObjMtype", "title": "$ioObjMtype", "type": "droplist", "hide": "!data.p2.r || data.p3.syschan",
+      "data": [
+        { "id": "1",  "title": "M_SP_NA (1)" },
+        { "id": "3",  "title": "M_DP_NA (3)" },
+        { "id": "5",  "title": "M_ST_NA (5)" },
+        { "id": "7",  "title": "M_BO_NA (7)" },
+        { "id": "9",  "title": "M_ME_NA (9)" },
+        { "id": "11", "title": "M_ME_NB (11)" },
+        { "id": "13", "title": "M_ME_NC (13)" },
+        { "id": "15", "title": "M_IT_NA (15)" },
+        { "id": "30", "title": "M_SP_TB (30)" },
+        { "id": "31", "title": "M_DP_TB (31)" },
+        { "id": "32", "title": "M_ST_TB (32)" },
+        { "id": "33", "title": "M_BO_TB (33)" },
+        { "id": "34", "title": "M_ME_TD (34)" },
+        { "id": "35", "title": "M_ME_TE (35)" },
+        { "id": "36", "title": "M_ME_TF (36)" },
+        { "id": "37", "title": "M_IT_TB (37)" }
+      ]
+    },
+    { "prop": "bit", "title": "$bit", "type": "cb", "hide": "!data.p2.r || data.p3.syschan" },
+    { "prop": "offset", "title": "$offset", "type": "number", "hide": "!data.p2.r || !data.p3.bit || data.p3.syschan", "default": 0 },
+
+    { "prop": "cmdAdr", "title": "$cmdAdr", "type": "number", "hide": "!data.p4.w" },
+    {
+      "prop": "ioObjCtype", "title": "$ioObjCtype", "type": "droplist", "hide": "!data.p4.w",
+      "data": [
+        { "id": "45", "title": "C_SC_NA (45)" },
+        { "id": "46", "title": "C_DC_NA (46)" },
+        { "id": "47", "title": "C_RC_NA (47)" },
+        { "id": "48", "title": "C_SE_NA (48)" },
+        { "id": "49", "title": "C_SE_NB (49)" },
+        { "id": "50", "title": "C_SE_NC (50)" },
+        { "id": "51", "title": "C_BO_NA (51)" },
+        { "id": "58", "title": "C_SC_TA (58)" },
+        { "id": "59", "title": "C_DC_TA (59)" },
+        { "id": "60", "title": "C_RC_TA (60)" },
+        { "id": "61", "title": "C_SE_TA (61)" },
+        { "id": "62", "title": "C_SE_TB (62)" },
+        { "id": "63", "title": "C_SE_TC (63)" },
+        { "id": "64", "title": "C_BO_TA (64)" },
+        { "id": "100", "title": "C_IC_NA (100)" },
+        { "id": "101", "title": "C_CI_NA (101)" },
+        { "id": "102", "title": "C_RD_NA (102)" },
+        { "id": "103", "title": "C_CS_NA (103)" }
+      ]
+    },
+    { "prop": "selCmd", "title": "$selCmd", "type": "cb", "hide": "!data.p4.w" },
+    {
+      "prop": "ql", "title": "$ql", "type": "droplist", "hide": "!data.p4.w",
+      "data": [
+        { "id": "0", "title": "$ql0" },
+        { "id": "1", "title": "$ql1" },
+        { "id": "2", "title": "$ql2" },
+        { "id": "3", "title": "$ql3" }
+      ]
+    }
+  ],
+
+  "p9": [
+    { "prop": "realtime_chan_str", "title": "$realtime_chan_str", "type": "text" },
+    { "prop": "realtime_dev_str", "title": "$realtime_dev_str", "type": "text" }
+  ],
+
+  "ptest": [
+    { "prop": "header_testwrite", "title": "$header_testwrite", "type": "header" },
+    { "prop": "testValue", "title": "$testValue", "type": "input" },
+    { "prop": "writeButton", "title": "$doWrite", "type": "button", "command": "writetochannel", "param": "write" }
+  ]
+}

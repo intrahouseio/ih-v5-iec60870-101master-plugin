@@ -1,0 +1,6 @@
+{
+  "id": "iec60870-101master",
+  "description": "IEC 60870-5-101 master unbalanced",
+  "cross": true,
+  "version": "5.0.0"
+}

@@ -1,0 +1,19 @@
+# Node.js
+node_modules/
+npm-debug.log*
+*.log
+
+# Runtime-файлы
+*.pid
+*.seed
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Локальные настройки
+.env
+.env.local

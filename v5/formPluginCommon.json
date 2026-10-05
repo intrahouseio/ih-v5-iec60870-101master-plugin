@@ -1,0 +1,72 @@
+{
+  "grid": [
+    { "id": "p1", "xs": 4, "class": "main", "table": "units" },
+    { "id": "p2", "xs": 4, "class": "main", "table": "units" },
+    { "id": "p3", "xs": 4, "class": "main", "table": "units" },
+    { "id": "p4", "xs": 12, "class": "main", "table": "units" },
+    { "id": "p9", "xs": 12, "class": "main", "table": "unitsTreeTable", "height": "fill" }
+  ],
+
+  "spacing": 10,
+
+  "p1": [
+    { "prop": "id", "title": "ID", "type": "text" },
+    { "prop": "name", "title": "$Name", "type": "input" },
+    { "prop": "portName", "title": "$portName", "type": "input", "default": "/dev/ttyUSB0" },
+    { "prop": "baudRate", "title": "$baudRate", "type": "number", "default": 9600 },
+    {
+      "prop": "parity",
+      "title": "$parity",
+      "type": "droplist",
+      "default": "E",
+      "data": [
+        { "id": "N", "title": "$parityN" },
+        { "id": "E", "title": "$parityE" },
+        { "id": "O", "title": "$parityO" }
+      ]
+    },
+    { "prop": "dataBits", "title": "$dataBits", "type": "number", "default": 8 },
+    { "prop": "stopBits", "title": "$stopBits", "type": "number", "default": 1 }
+  ],
+
+  "p2": [
+    { "prop": "linkAddress", "title": "$linkAddress", "type": "number", "default": 3 },
+    { "prop": "reconnectDelay", "title": "$reconnectDelay", "type": "number", "default": 10 },
+    { "prop": "queueSize", "title": "$queueSize", "type": "number", "default": 1000 }
+  ],
+
+  "p3": [
+    { "prop": "polldelay", "title": "$polldelay", "type": "number", "default": 100 },
+    { "prop": "interrogationtimer", "title": "$interrogationtimer", "type": "number", "default": 15 },
+    { "prop": "timesynctimer", "title": "$timesynctimer", "type": "number", "default": 30 },
+    { "prop": "buffertime", "title": "$buffertime", "type": "number", "default": 500 },
+    { "prop": "restarttime", "title": "$Unit_Restarttime", "type": "number", "default": 5 },
+    { "prop": "loglevel", "title": "$LogLevel", "type": "droplist", "data": "loglevelList" },
+    { "prop": "txt", "title": "$Comment", "type": "input" }
+  ],
+
+  "p4": [
+    { "prop": "sizeOfTypeId",   "title": "$sizeOfTypeId",   "type": "number", "default": 1 },
+    { "prop": "sizeOfVSQ",      "title": "$sizeOfVSQ",      "type": "number", "default": 1 },
+    { "prop": "sizeOfCOT",      "title": "$sizeOfCOT",      "type": "number", "default": 1 },
+    { "prop": "sizeOfCA",       "title": "$sizeOfCA",       "type": "number", "default": 1 },
+    { "prop": "sizeOfIOA",      "title": "$sizeOfIOA",      "type": "number", "default": 3 },
+    { "prop": "maxSizeOfASDU",  "title": "$maxSizeOfASDU",  "type": "number", "default": 249 }
+  ],
+
+  "p9": [
+    {
+      "title": "",
+      "type": "table",
+      "prop": "unitsTreeTable",
+      "columns": [
+        { "prop": "name",      "title": "$name",      "type": "text", "width": 150 },
+        { "prop": "state",     "title": "$state",     "type": "text", "width": 150 },
+        { "prop": "laststart", "title": "$laststart", "type": "text", "width": 150 },
+        { "prop": "laststop",  "title": "$laststop",  "type": "text", "width": 150 },
+        { "prop": "uptime",    "title": "$uptime",    "type": "text", "width": 150 },
+        { "prop": "error",     "title": "$error",     "type": "text", "width": 250 }
+      ]
+    }
+  ]
+}

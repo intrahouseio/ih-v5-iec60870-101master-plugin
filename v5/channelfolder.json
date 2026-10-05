@@ -1,0 +1,53 @@
+{
+  "grid": [
+    { "id": "p1", "xs": 6, "class": "main", "table": "devhard" },
+    { "id": "p2", "xs": 6, "class": "main", "table": "devhard" }
+  ],
+  "spacing": 4,
+
+  "p1": [
+    { "prop": "chan", "title": "$Name", "type": "input" },
+    { "prop": "foldertype", "title": "", "type": "text", "hide": "1==1" },
+    { "prop": "slaveAddress", "title": "$slaveAddress", "type": "number", "default": 1, "hide": "data.p1.foldertype != 'node'" },
+    { "prop": "asduAddress", "title": "$asduAddress", "type": "number", "default": 1, "hide": "data.p1.foldertype != 'node'" },
+    {
+      "prop": "tzondevice", "title": "$tzondevice", "type": "droplist",
+      "default": "UTC+3", "hide": "data.p1.foldertype != 'node'",
+      "data": [
+        { "id": "UTC+12", "title": "UTC+12" },
+        { "id": "UTC+11", "title": "UTC+11" },
+        { "id": "UTC+10", "title": "UTC+10" },
+        { "id": "UTC+9",  "title": "UTC+9"  },
+        { "id": "UTC+8",  "title": "UTC+8"  },
+        { "id": "UTC+7",  "title": "UTC+7"  },
+        { "id": "UTC+6",  "title": "UTC+6"  },
+        { "id": "UTC+5",  "title": "UTC+5"  },
+        { "id": "UTC+4",  "title": "UTC+4"  },
+        { "id": "UTC+3",  "title": "UTC+3"  },
+        { "id": "UTC+2",  "title": "UTC+2"  },
+        { "id": "UTC+1",  "title": "UTC+1"  },
+        { "id": "UTC+0",  "title": "UTC+0"  },
+        { "id": "UTC-1",  "title": "UTC-1"  },
+        { "id": "UTC-2",  "title": "UTC-2"  },
+        { "id": "UTC-3",  "title": "UTC-3"  },
+        { "id": "UTC-4",  "title": "UTC-4"  },
+        { "id": "UTC-5",  "title": "UTC-5"  },
+        { "id": "UTC-6",  "title": "UTC-6"  },
+        { "id": "UTC-7",  "title": "UTC-7"  },
+        { "id": "UTC-8",  "title": "UTC-8"  },
+        { "id": "UTC-9",  "title": "UTC-9"  },
+        { "id": "UTC-10", "title": "UTC-10" },
+        { "id": "UTC-11", "title": "UTC-11" },
+        { "id": "UTC-12", "title": "UTC-12" }
+      ]
+    },
+    { "prop": "timesync", "title": "$timesync", "type": "cb", "default": 0, "hide": "data.p1.foldertype != 'node'" }
+  ],
+
+  "p2": [
+    { "prop": "paramt0", "title": "$paramT0", "type": "number", "default": 120, "hide": "data.p1.foldertype != 'node'" },
+    { "prop": "paramt1", "title": "$paramT1", "type": "number", "default": 60, "hide": "data.p1.foldertype != 'node'" },
+    { "prop": "paramt2", "title": "$paramT2", "type": "number", "default": 40, "hide": "data.p1.foldertype != 'node'" },
+    { "prop": "txt", "title": "$Comment", "type": "textarea" }
+  ]
+}

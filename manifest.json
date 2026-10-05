@@ -1,0 +1,74 @@
+{
+  "name": "iec60870-101master",
+  "description": "Master 60870-5-101 (unbalanced)",
+  "single": 0,
+  "innerId": 1,
+  "hasTryStartState": 1,
+  "linkChstatus": 1,
+
+  "share_node_folder_fields": [
+    "slaveAddress", "asduAddress",
+    "paramt0", "paramt1", "paramt2",
+    "tzondevice", "timesync"
+  ],
+
+  "channel_popup": {
+    "add": [
+      { "id": "channel_folder", "title": "$NewFolder" },
+      { "id": "channel_node_folder", "title": "$NewNode" },
+      { "id": "channel", "title": "$ChannelRead" }
+    ],
+    "copypaste": true,
+    "delete": true
+  },
+
+  "channel_folder_popup": {
+    "add": [
+      { "id": "channel_folder", "title": "$NewFolder" },
+      { "id": "channel_node_folder", "title": "$NewNode" },
+      { "id": "channel", "title": "$NewChannel" }
+    ],
+    "browse": { "variant": "subtree" },
+    "copypaste": true,
+    "delete": true
+  },
+
+  "default_channel_node_folder": {
+    "foldertype": "node",
+    "slaveAddress": 1,
+    "asduAddress": 1,
+    "paramt0": 120,
+    "paramt1": 60,
+    "paramt2": 40,
+    "tzondevice": "UTC+3",
+    "timesync": 0,
+    "channels": [
+      {
+        "r": 1,
+        "title": "Connection Status",
+        "syschan": 1
+      }
+    ]
+  },
+
+  "default_channel": {
+    "r": 1,
+    "w": 0,
+    "bit": 0,
+    "offset": 0,
+    "ioObjMtype": "1",
+    "title": "Channel 1",
+    "ioObjCtype": "45",
+    "selCmd": false,
+    "ql": "0",
+    "objAdr": 1,
+    "cmdAdr": 1,
+    "syschan": 0
+  },
+
+  "default_channel_sys": {
+    "r": 1,
+    "title": "Connection Status",
+    "syschan": 1
+  }
+}
