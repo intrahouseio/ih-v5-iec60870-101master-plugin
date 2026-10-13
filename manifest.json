@@ -9,7 +9,8 @@
   "share_node_folder_fields": [
     "slaveAddress", "asduAddress",
     "paramt0", "paramt1", "paramt2",
-    "tzondevice", "timesync"
+    "tzondevice", "timesync",
+    "periodicpoll"
   ],
 
   "channel_popup": {
@@ -42,12 +43,13 @@
     "paramt2": 40,
     "tzondevice": "UTC+3",
     "timesync": 0,
+    "periodicpoll": 30,
     "channels": [
-      {
-        "r": 1,
-        "title": "Connection Status",
-        "syschan": 1
-      }
+        {
+            "r": 1,
+            "title": "Connection Status",
+            "syschan": 1
+        }
     ]
   },
 

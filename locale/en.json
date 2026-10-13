@@ -35,6 +35,8 @@
   "polldelay": "Polling interval, ms",
   "interrogationtimer": "Interrogation period, min",
   "buffertime": "Send buffer time, ms",
+  "periodicpoll": "Periodic interrogation (min)",
+  "periodicpoll_off": "Disabled",
 
   "paramT0": "Parameter T0 (link state timeout, sec)",
   "paramT1": "Parameter T1 (ACK timeout, sec)",

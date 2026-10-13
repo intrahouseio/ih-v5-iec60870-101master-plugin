@@ -36,8 +36,7 @@
   ],
 
   "p3": [
-    { "prop": "polldelay", "title": "$polldelay", "type": "number", "default": 100 },
-    { "prop": "interrogationtimer", "title": "$interrogationtimer", "type": "number", "default": 15 },
+    { "prop": "polldelay", "title": "$polldelay", "type": "number", "default": 100 },    
     { "prop": "timesynctimer", "title": "$timesynctimer", "type": "number", "default": 30 },
     { "prop": "buffertime", "title": "$buffertime", "type": "number", "default": 500 },
     { "prop": "restarttime", "title": "$Unit_Restarttime", "type": "number", "default": 5 },

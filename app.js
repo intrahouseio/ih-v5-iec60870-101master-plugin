@@ -37,8 +37,7 @@ module.exports = async function (plugin) {
 
   let sendArr = [];
   let T1 = null;
-  let pollTimer = null;
-  let interrogTimer = null;
+  let pollTimer = null;  
   let timeSyncTimer = null;
   let connected = false;
   let pollIndex = 0;
@@ -46,6 +45,7 @@ module.exports = async function (plugin) {
   let masterStarted = false;
   let pendingConnect = false;
   const onlineSlaves = new Set();
+  const lastConnStatus = new Map(); 
 
   plugin.log('101master started. Slave addresses: ' + util.inspect(slaveAddresses), 2);
   plugin.log('params = ' + util.inspect(params), 2);
@@ -59,6 +59,37 @@ module.exports = async function (plugin) {
       sendArr = [];
     }
     T1 = setTimeout(sendNext, params.buffertime || 500);
+  }
+
+    // ★ Идемпотентная установка connectionStatusId для конкретного slave.
+  //   Не отправляет повторно то же значение, чтобы не плодить события в SCADA.
+  function setConnStatus(slaveAddr, value, reason) {
+    const bucket = channelsObj[slaveAddr];
+    if (!bucket || !bucket.connectionStatusId) return;
+
+    const v = value ? 1 : 0;
+    const prev = lastConnStatus.get(slaveAddr);
+
+    if (prev === v) {
+      plugin.log(`[connStatus] slave ${slaveAddr} = ${v} (no change, skip)`, 3);
+      return;
+    }
+    lastConnStatus.set(slaveAddr, v);
+
+    sendArr.push({
+      id: bucket.connectionStatusId,
+      value: v,
+      ts: Date.now()
+    });
+    plugin.log(`[connStatus] slave ${slaveAddr} = ${v} (${reason || ''})`, 2);
+  }
+
+  // ★ Сбросить статусы всех slave в 0 (например, при потере serial-порта)
+  function setAllConnStatusDown(reason) {
+    for (const sa of slaveAddresses) {
+      onlineSlaves.delete(sa);
+      setConnStatus(sa, 0, reason);
+    }
   }
 
   // ====== Создание master'а ======
@@ -102,14 +133,22 @@ module.exports = async function (plugin) {
         plugin.log(`Slave ${slaveAddr}: link layer busy`, 2);
         break;
 
+      case 'reconnecting':
+        // ★ Serial-порт потерян или не открылся — нет смысла хранить статусы
+        plugin.log(`Reconnecting: ${ev.reason}`, 1);
+        setAllConnStatusDown('reconnecting');
+        break;
+  
       case 'failed':
       case 'error':
         plugin.log(`Slave ${slaveAddr}: ${ev.reason}`, 1);
-        if (!isNaN(slaveAddr)) onSlaveClosed(slaveAddr);
-        break;
-
-      case 'reconnecting':
-        plugin.log(`Reconnecting: ${ev.reason}`, 1);
+        if (!isNaN(slaveAddr)) {
+          onSlaveClosed(slaveAddr);
+        } else {
+          // ★ Событие без slaveAddress (thread exception / потеря порта)
+          plugin.log('Global error without slaveAddress — marking all down', 1);
+          setAllConnStatusDown('global error');
+        }
         break;
 
       // ---- Инициализация master'а завершена ----
@@ -174,8 +213,13 @@ module.exports = async function (plugin) {
     connected = true;
     plugin.log('Master init DONE, launching polling loops.', 1);
 
-    startPolling();
-    startInterrogationTimer();
+    // ★ Начальная инициализация: все slave в offline.
+    //   Реальные "opened" события переключат их в 1, когда связь появится.
+    for (const sa of slaveAddresses) {
+      setConnStatus(sa, 0, 'init');
+    }
+
+    startPolling();    
     startTimeSync();
   }
 
@@ -189,8 +233,13 @@ module.exports = async function (plugin) {
       sendArr.push({ id: bucket.connectionStatusId, value: 1, ts: Date.now() });
     }
 
-    // Общий опрос после короткой паузы — канал успевает стать готов
-    setTimeout(() => sendInterrogation(slaveAddr), 500);
+    // Первый interrogation — только если периодический опрос разрешён
+    if (bucket && Number(bucket.periodicpoll || 0) > 0) {
+      setTimeout(() => sendInterrogation(slaveAddr), 500);
+    }
+
+    // Планируем периодический опрос для этого slave
+    scheduleInterrogation(slaveAddr);
   }
 
   // ====== Slave закрылся ======
@@ -202,6 +251,9 @@ module.exports = async function (plugin) {
     if (bucket && bucket.connectionStatusId) {
       sendArr.push({ id: bucket.connectionStatusId, value: 0, ts: Date.now() });
     }
+
+    // ★ Останавливаем периодический опрос для отключённого slave
+    cancelInterrogation(slaveAddr);
   }
 
   // ====== Приём данных ======
@@ -251,8 +303,7 @@ module.exports = async function (plugin) {
 
   // ====== Остановка таймеров ======
   function stopTimers() {
-    if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
-    if (interrogTimer) { clearInterval(interrogTimer); interrogTimer = null; }
+    if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }    
     if (timeSyncTimer) { clearTimeout(timeSyncTimer); timeSyncTimer = null; }
   }
 
@@ -294,12 +345,57 @@ module.exports = async function (plugin) {
     }
   }
 
-  function startInterrogationTimer() {
-    const periodMin = Number(params.interrogationtimer || 15);
-    interrogTimer = setInterval(() => {
-      slaveAddresses.forEach(sendInterrogation);
-    }, periodMin * 60 * 1000);
-  }
+    // ====== Периодический общий опрос (per slave) ======
+    const interrogationTimers = new Map();   // sa → timerId
+
+    function scheduleInterrogation(sa) {
+      // Отменить старый таймер для этого slave
+      const old = interrogationTimers.get(sa);
+      if (old) {
+        clearTimeout(old);
+        interrogationTimers.delete(sa);
+      }
+  
+      const bucket = channelsObj[sa];
+      if (!bucket) return;
+  
+      const periodMin = Number(bucket.periodicpoll || 0);
+      if (periodMin <= 0) {
+        plugin.log(`[IC] slave ${sa}: periodic interrogation disabled`, 2);
+        return;
+      }
+      if (!onlineSlaves.has(sa)) {
+        plugin.log(`[IC] slave ${sa}: offline, skip scheduling`, 3);
+        return;
+      }
+  
+      const intervalMs = periodMin * 60 * 1000;
+      plugin.log(`[IC] slave ${sa}: next periodic interrogation in ${periodMin} min`, 1);
+  
+      const t = setTimeout(() => {
+        interrogationTimers.delete(sa);
+        if (connected && onlineSlaves.has(sa)) {
+          sendInterrogation(sa);
+        }
+        scheduleInterrogation(sa);   // перепланировать
+      }, intervalMs);
+  
+      interrogationTimers.set(sa, t);
+    }
+  
+    function cancelInterrogation(sa) {
+      const t = interrogationTimers.get(sa);
+      if (t) {
+        clearTimeout(t);
+        interrogationTimers.delete(sa);
+        plugin.log(`[IC] slave ${sa}: periodic interrogation cancelled`, 2);
+      }
+    }
+  
+    function cancelAllInterrogations() {
+      for (const [, t] of interrogationTimers.entries()) clearTimeout(t);
+      interrogationTimers.clear();
+    }
 
   // ====== Синхронизация времени (C_CS_NA_1) ======
   function startTimeSync() {
@@ -366,6 +462,12 @@ module.exports = async function (plugin) {
           slaveAddresses: slaveAddresses
         }
       });
+
+      //pendingConnect = false;
+      lastConnStatus.clear();
+      for (const sa of slaveAddresses) {
+        lastConnStatus.set(sa, 0);
+      }
 
       pendingConnect = false;
     } catch (e) {
@@ -445,6 +547,7 @@ module.exports = async function (plugin) {
     });
   });
 
+  
   // ====== Изменение каналов ======
   plugin.channels.onChange(async () => {
     channels = await plugin.channels.get();
@@ -454,6 +557,7 @@ module.exports = async function (plugin) {
 
     plugin.log('channels.onChange: new slaveAddresses=' + util.inspect(newAddrs), 2);
 
+    // Ещё не подключены — просто сохранили и попробовали подключиться
     if (!masterStarted && (pendingConnect || newAddrs.length > 0)) {
       channelsObj = newObj;
       slaveAddresses = newAddrs;
@@ -461,6 +565,7 @@ module.exports = async function (plugin) {
       return;
     }
 
+    // Уже подключены — динамически добавляем новых slave
     if (connected) {
       newAddrs.forEach(a => {
         if (!slaveAddresses.includes(a)) {
@@ -474,35 +579,77 @@ module.exports = async function (plugin) {
       });
     }
 
+    // Обновляем локальные структуры
     channelsObj = newObj;
     slaveAddresses = newAddrs;
 
-    if (connected) slaveAddresses.forEach(sendInterrogation);
+    // Инициируем общий опрос для всех настроенных slave
+    cancelAllInterrogations();
+    if (connected) {
+      slaveAddresses.forEach(sa => scheduleInterrogation(sa));
+    }
   });
 
   // ====== Сканирование ======
+   // ====== Хелпер: найти slaveAddress по ID папки дерева ======
+   function getSlaveByFolder(folderId) {
+    if (!folderId) return null;
+    for (const item of channels) {
+      if (item.parentnodefolder === folderId) {
+        const sa = Number(item.slaveAddress);
+        return isNaN(sa) ? null : sa;
+      }
+    }
+    return null;
+  }
+
+  // ====== Сканирование ======
   plugin.onScan(scanObj => {
+    plugin.log('>>> onScan: ' + util.inspect(scanObj, { depth: 5 }), 1);
+
     if (!scanObj) return;
 
+    // ---- Стоп ----
     if (scanObj.stop) {
-      scanner.clients.clear();
       scanner.stop();
+      if (scanner.clients && scanner.clients.clear) scanner.clients.clear();
       return;
     }
 
-    const sa = (scanObj.slaveAddress !== undefined) ? Number(scanObj.slaveAddress) : null;
-    if (sa !== null && !isNaN(sa)) {
-      scanner.request(master, sa, scanObj.uuid);
-    } else {
-      slaveAddresses.forEach(a => scanner.request(master, a, scanObj.uuid));
+    // ---- Определяем, какой slave сканировать ----
+    let sa = null;
+
+    // Вариант 1: IntraSCADA явно передала slaveAddress
+    if (scanObj.slaveAddress !== undefined && scanObj.slaveAddress !== null) {
+      sa = Number(scanObj.slaveAddress);
     }
+
+    // Вариант 2: определяем по ID папки (subnode) — это наш рабочий случай
+    if ((sa === null || isNaN(sa)) && scanObj.subnode) {
+      sa = getSlaveByFolder(scanObj.subnode);
+      plugin.log(`>>> scan: resolved slave=${sa} from subnode=${scanObj.subnode}`, 2);
+    }
+
+    // ---- Не смогли определить — не сканируем, чтобы не путать деревья ----
+    if (sa === null || isNaN(sa)) {
+      plugin.log(
+        `>>> scan: cannot determine slave for subnode=${scanObj.subnode} ` +
+        `(title="${scanObj.subnodetitle}"). Skipping.`,
+        1
+      );
+      return;
+    }
+
+    // ---- Сканируем конкретный slave ----
+    plugin.log(`>>> scan slave=${sa}, uuid=${scanObj.uuid}, subnode=${scanObj.subnode}`, 2);
+    scanner.request(master, sa, scanObj.uuid);
   });
 
   // ====== Завершение ======
   async function terminate() {
     stopTimers();
     if (T1) clearTimeout(T1);
-    try { if (master) master.disconnect(); } catch (e) { /* ignore */ }
+    try { if (master) master.disconnect(); } catch (e) { }
     plugin.exit();
   }
   process.on('SIGTERM', terminate);
@@ -529,6 +676,7 @@ module.exports = async function (plugin) {
           paramt2: item.paramt2 || 40,
           tzondevice: item.tzondevice || 'UTC+0',
           timesync: item.timesync || 0,
+          periodicpoll: Number(item.periodicpoll != undefined ? item.periodicpoll : 30),
           connectionStatusId: item.syschan ? item.id : '',
           objects: new Map()
         });
@@ -558,6 +706,7 @@ module.exports = async function (plugin) {
           paramt2: v.paramt2,
           tzondevice: v.tzondevice,
           timesync: v.timesync,
+          periodicpoll: v.periodicpoll, 
           connectionStatusId: v.connectionStatusId,
           objects: Object.fromEntries(v.objects)
         }
